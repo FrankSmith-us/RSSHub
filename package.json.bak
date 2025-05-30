@@ -21,7 +21,7 @@
         "lib"
     ],
     "scripts": {
-        "build": "cross-env NODE_OPTIONS='--import ./proxy-fetch.js' tsx scripts/workflow/build-routes.ts && tsdown",
+        "build": "tsx scripts/workflow/build-routes.ts && tsdown",
         "build:docs": "tsx scripts/workflow/build-docs.ts",
         "dev": "cross-env NODE_ENV=dev tsx watch --inspect --clear-screen=false lib/index.ts",
         "dev:cache": "cross-env NODE_ENV=production tsx watch --clear-screen=false lib/index.ts",
@@ -83,7 +83,6 @@
         "etag": "1.8.1",
         "fanfou-sdk": "5.0.0",
         "form-data": "4.0.2",
-        "global-agent": "^3.0.0",
         "googleapis": "149.0.0",
         "hono": "4.7.10",
         "html-to-text": "9.0.5",

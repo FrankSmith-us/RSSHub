@@ -1,50 +1,53 @@
 services:
-    rsshub:
-        # two ways to enable puppeteer:
-        # * comment out marked lines, then use this image instead: diygod/rsshub:chromium-bundled
-        # * (consumes more disk space and memory) leave everything unchanged
-        image: diygod/rsshub
-        restart: always
-        ports:
-            - "1200:1200"
-        environment:
-            NODE_ENV: production
-            CACHE_TYPE: redis
-            REDIS_URL: "redis://redis:6379/"
-            PUPPETEER_WS_ENDPOINT: "ws://browserless:3000" # marked
-        healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:1200/healthz"]
-            interval: 30s
-            timeout: 10s
-            retries: 3
-        depends_on:
-            - redis
-            - browserless # marked
+  rsshub:
+    image: diygod/rsshub:chromium-bundled
+    container_name: rsshub
+    # restart: always
+    ports:
+      - "1200:1200" # 将主机端口1200映射到容器端口1200
+    environment:
+      # 缓存配置 (推荐使用 Redis，提高性能)
+      # 默认是 memory，在生产环境不推荐，因为重启后缓存会丢失
+      # 如果您不打算使用 Redis，可以删除 CACHE_TYPE 和 REDIS_URL 这两行，RSSHub会使用内存缓存
+      - DEBUG_INFO=true
+      - CACHE_TYPE=redis
+      - REDIS_URL=redis://redis:6379/
+      - NODE_ENV=production
+      - NITTER_INSTANCE=https://nitter.tiekoetter.com
 
-    browserless: # marked
-        image: browserless/chrome # marked
-        restart: always # marked
-        ulimits: # marked
-            core: # marked
-                hard: 0 # marked
-                soft: 0 # marked
-        healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:3000/pressure"]
-            interval: 30s
-            timeout: 10s
-            retries: 3
+      - XUEQIU_COOKIES=${XUEQIU_COOKIES}
+      - ZHIHU_COOKIES=${ZHIHU_COOKIES}
+      - TWITTER_USERNAME=${TWITTER_USERNAME}
+      - TWITTER_PASSWORD=${TWITTER_PASSWORD}
+      - TWITTER_AUTHENTICATION_SECRET=${TWITTER_AUTHENTICATION_SECRET}
+      - TWITTER_PHONE_OR_EMAIL=${TWITTER_PHONE_OR_EMAIL}
+      - TWITTER_AUTH_TOKEN=${TWITTER_AUTH_TOKEN}
+      - TWITTER_THIRD_PARTY_API=${TWITTER_THIRD_PARTY_API}
+      - TWITTER_COOKIE=${TWITTER_COOKIE}
+      - TWITTER_CONFIG_ALLOW=${TWITTER_CONFIG_ALLOW}
 
-    redis:
-        image: redis:alpine
-        restart: always
-        volumes:
-            - redis-data:/data
-        healthcheck:
-            test: ["CMD", "redis-cli", "ping"]
-            interval: 30s
-            timeout: 10s
-            retries: 5
-            start_period: 5s
+      # --- 添加以下代理配置 ---
+      - HTTP_PROXY=http://172.17.0.1:7890/
+      - HTTPS_PROXY=http://172.17.0.1:7890/ # 注意这里仍使用HTTP代理7890，因为大多数应用层面的代理是HTTP协议
+      - NO_PROXY=localhost,127.0.0.1,172.17.0.0/16
+      # --- 添加以下 Node.js 环境变量 ---
+      #- NODE_TLS_REJECT_UNAUTHORIZED=0
+      # --- Node.js 环境变量结束 ---
 
-volumes:
-    redis-data:
+      # 更多配置选项 (可选)
+      # 例如，开启调试模式 (debug)
+      # - NODE_ENV=development
+      # 密钥 (用于某些需要鉴权的路由)
+      # - RSSHUB_ACCESS_KEY=your_secret_key_here
+      # 自定义主题 (如果需要)
+      # - RSSHUB_THEME=Dark
+    depends_on:
+      - redis # rsshub 服务依赖于 redis 服务
+
+  redis:
+    image: redis:alpine
+    container_name: rsshub-redis
+    restart: always
+    # 如果您不需要外部访问 Redis，可以不映射端口
+    # ports:
+    #   - "6379:6379"
